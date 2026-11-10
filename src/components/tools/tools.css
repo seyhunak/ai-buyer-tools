@@ -1,0 +1,65 @@
+/* Hallmark · shape: kept (legacy pages), recomposed (home, blog, open-source, resume, tools) · genre: atmospheric · theme: Lumen (by request) · redesign: full
+ * hero: Settled · nav: floating pill bar, grouped dropdowns · footer: link columns over the wordmark · imagery: the product (case studies), the user's avatar · signature: the request path drawn as a blueprint diagram from task to hours saved
+ * axes: dark/roman-serif/warm · posture: restrained · contrast: pass · fold: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P_ H_ E_ S_ R_ V_ · weakest: shares the globals.css system; this file holds one page's composition */
+.tl-wrap { width: 100%; max-width: 76rem; margin-inline: auto; padding: var(--space-2xl) var(--space-md) var(--space-3xl); }
+@media (min-width: 60rem) { .tl-wrap { padding-inline: var(--space-lg); } }
+.tl-intro { display: grid; gap: var(--space-md); justify-items: start; padding-bottom: var(--space-xl); }
+.tl-lead { font-size: var(--text-lead); color: var(--color-ink-2); max-width: 60ch; }
+.tl-meta { display: flex; flex-wrap: wrap; gap: var(--space-md); align-items: center; }
+.tl-back { color: hsl(var(--muted-foreground)); text-decoration: none; }
+.tl-back:hover { color: hsl(var(--foreground)); }
+.tl-app { display: grid; gap: var(--space-xl); grid-template-columns: minmax(0, 1fr); align-items: start; padding-block: var(--space-xl); border-top: 1px solid hsl(var(--border)); }
+@media (min-width: 60rem) { .tl-app { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); } .tl-sticky { position: sticky; top: 6rem; } }
+.tl-form { display: grid; gap: var(--space-md); }
+.tl-fieldset { display: grid; gap: var(--space-md); border: 0; margin: 0; padding: 0; }
+.tl-fieldset + .tl-fieldset { padding-top: var(--space-md); border-top: 1px solid hsl(var(--border)); }
+.tl-fieldset legend { font-family: var(--font-display); font-size: var(--text-xl); color: hsl(var(--foreground)); margin-bottom: var(--space-sm); }
+.tl-row { display: grid; gap: var(--space-md); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tl-field { display: grid; gap: var(--space-2xs); }
+.tl-field > span { font-size: var(--text-sm); color: var(--color-ink-2); }
+.tl-hint { font-size: var(--text-xs); color: hsl(var(--muted-foreground)); }
+.tl-input, .tl-select { width: 100%; min-height: 44px; padding: var(--space-xs) var(--space-sm); background: hsl(var(--card)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--input)); border-radius: 8px; font-family: var(--font-mono, ui-monospace, monospace); font-size: var(--text-sm); transition: border-color var(--dur-micro) var(--ease-out); }
+.tl-input:hover, .tl-select:hover { border-color: hsl(var(--muted-foreground)); }
+.tl-input:focus-visible, .tl-select:focus-visible, .tl-range:focus-visible, .tl-check input:focus-visible, .tl-btn:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.tl-range { width: 100%; accent-color: hsl(var(--primary)); min-height: 28px; }
+.tl-scale { display: flex; justify-content: space-between; font-size: var(--text-xs); color: hsl(var(--muted-foreground)); }
+.tl-check { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-sm); align-items: start; padding: var(--space-xs) 0; font-size: var(--text-sm); color: var(--color-ink-2); cursor: pointer; }
+.tl-check input { margin-top: var(--space-2xs); width: 18px; height: 18px; accent-color: hsl(var(--primary)); }
+.tl-check small { display: block; color: hsl(var(--muted-foreground)); font-size: var(--text-xs); }
+.tl-result { display: grid; gap: var(--space-lg); padding: var(--space-lg); }
+.tl-stats { display: grid; gap: var(--space-md); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tl-stat { display: grid; gap: var(--space-3xs); }
+.tl-stat-value { font-family: var(--font-display); font-size: var(--text-2xl); color: hsl(var(--foreground)); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tl-stat-value.is-signal { color: hsl(var(--primary)); }
+.tl-stat-label { font-size: var(--text-sm); color: hsl(var(--muted-foreground)); }
+.tl-verdict { font-family: var(--font-display); font-size: var(--text-2xl); color: hsl(var(--foreground)); }
+.tl-list { margin: 0; padding-left: var(--space-lg); list-style: disc; color: var(--color-ink-2); font-size: var(--text-sm); }
+.tl-list li + li { margin-top: var(--space-2xs); }
+.tl-ref { font-family: var(--font-mono, ui-monospace, monospace); font-size: var(--text-xs); color: hsl(var(--muted-foreground)); white-space: nowrap; }
+.tl-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.tl-table th { text-align: left; font-weight: 400; color: hsl(var(--muted-foreground)); padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; border-bottom: 1px solid hsl(var(--input)); }
+.tl-table td { padding: var(--space-xs) var(--space-sm) var(--space-xs) 0; border-bottom: 1px solid hsl(var(--border)); color: var(--color-ink-2); font-variant-numeric: tabular-nums; }
+.tl-table .num { text-align: right; }
+.tl-table tr.is-selected td { color: hsl(var(--foreground)); }
+.tl-scroll { overflow-x: auto; }
+.tl-btn { justify-self: start; }
+.tl-note { font-size: var(--text-xs); color: hsl(var(--muted-foreground)); }
+.tl-chart { width: 100%; height: auto; }
+.tl-legend { display: flex; flex-wrap: wrap; gap: var(--space-md); font-size: var(--text-sm); color: var(--color-ink-2); }
+.tl-swatch { display: inline-block; width: 14px; height: 2px; margin-right: var(--space-2xs); vertical-align: middle; }
+.tl-section { padding-block: var(--space-2xl); border-top: 1px solid hsl(var(--border)); }
+.tl-section .section-head { margin-bottom: var(--space-lg); }
+.tl-faq { display: grid; gap: var(--space-lg); max-width: 68ch; }
+.tl-faq h3 { font-size: var(--text-xl); color: hsl(var(--foreground)); }
+.tl-faq p { color: var(--color-ink-2); margin-top: var(--space-2xs); }
+.tl-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-md); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 40rem) { .tl-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 60rem) { .tl-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tl-card { display: grid; gap: var(--space-xs); align-content: start; height: 100%; padding: var(--space-lg); text-decoration: none; transition: border-color var(--dur-micro) var(--ease-out); }
+.tl-card:hover { border-color: hsl(var(--primary)); }
+.tl-card:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.tl-card-name { font-family: var(--font-display); font-size: var(--text-title); color: hsl(var(--foreground)); }
+.tl-card-desc { color: hsl(var(--muted-foreground)); font-size: var(--text-sm); }
+.tl-card:active { border-color: var(--brass-deep); }
+.tl-back:active { color: hsl(var(--primary)); }

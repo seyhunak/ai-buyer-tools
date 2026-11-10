@@ -1,0 +1,26 @@
+/* Standalone copy of the site's Lumen tokens, just what the tools use. Re-skin here. */
+:root {
+  --background: 248 53% 4%; --foreground: 258 33% 96%; --card: 250 40% 7%; --muted: 249 29% 11%;
+  --muted-foreground: 252 9% 63%; --border: 248 21% 18%; --input: 250 17% 27%; --primary: 30 100% 65%; --ring: 30 100% 65%;
+  --color-ink-2: oklch(85% 0.017 298); --brass-deep: #d9883a;
+  --font-display: "Instrument Serif", ui-serif, Georgia, serif; --font-body: "Geist", ui-sans-serif, system-ui, sans-serif; --font-mono: "Geist Mono", ui-monospace, monospace;
+  --space-3xs: 2px; --space-2xs: 4px; --space-xs: 8px; --space-sm: 12px; --space-md: 16px; --space-lg: 24px; --space-xl: 40px; --space-2xl: 64px; --space-3xl: 96px;
+  --text-xs: 0.8125rem; --text-sm: 0.875rem; --text-md: 1rem; --text-lg: 1.25rem; --text-xl: 1.5625rem; --text-2xl: 1.953rem;
+  --text-title: clamp(1.25rem, 0.75vw + 0.875rem, 1.625rem); --text-lead: clamp(1.125rem, 0.35vw + 1rem, 1.375rem); --text-display: clamp(2.75rem, 5vw + 1rem, 5.25rem);
+  --radius-card: 10px; --dur-micro: 120ms; --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: var(--font-body); line-height: 1.6; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; text-transform: lowercase; }
+p { margin: 0; }
+a { color: inherit; }
+.display-xl { font-size: var(--text-display); line-height: 1; }
+.section-head { font-size: var(--text-2xl); }
+.label { font-size: var(--text-sm); color: hsl(var(--muted-foreground)); }
+.readout { font-family: var(--font-mono); font-size: var(--text-sm); }
+.well { background: hsl(var(--card)); border: 1px solid hsl(var(--border)); border-radius: var(--radius-card); }
+.btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--space-lg); border-radius: 999px; font: inherit; font-size: var(--text-sm); cursor: pointer; text-decoration: none; transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out); }
+.btn--secondary { background: transparent; color: hsl(var(--foreground)); border: 1px solid hsl(var(--input)); }
+.btn--secondary:hover { border-color: hsl(var(--primary)); }
+.btn:active { border-color: var(--brass-deep); }

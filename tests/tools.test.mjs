@@ -7,6 +7,10 @@ import { wilson, requiredSampleSize, zeroFailureTests, judgeClaim } from '../src
 import { classify, EMPTY_ANSWERS, toMarkdown } from '../src/lib/tools/eu-ai-act.ts'
 import { scoreFit, DEFAULT_FIT } from '../src/lib/tools/workflow-fit.ts'
 import { compare, DEFAULT_BVB } from '../src/lib/tools/build-vs-buy.ts'
+import { route, requestCost, priceFor, DEFAULT_ROUTING } from '../src/lib/tools/model-routing.ts'
+import { erlangC, serviceLevel, staff, DEFAULT_STAFFING } from '../src/lib/tools/review-staffing.ts'
+import { scorecard, weightedScore, CRITERIA as VENDOR_CRITERIA, DEFAULT_VENDORS, toMarkdown as vendorMarkdown } from '../src/lib/tools/vendor-scorecard.ts'
+import { screen, EMPTY_DPIA, toMarkdown as dpiaMarkdown } from '../src/lib/tools/dpia.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -139,4 +143,81 @@ test('build vs buy: cumulative series and break-even', () => {
   const noBuild = compare({ ...DEFAULT_BVB, buildAutomation: 0 })
   assert.equal(noBuild.breakEvenBuildVsManual, null)
   assert.notEqual(noBuild.cheapest, 'build')
+})
+
+// --- model routing
+test('model routing: request cost at list price, Haiku long-context tier', () => {
+  close(requestCost(modelById('claude-sonnet-5-5'), 1000, 1000), (1000 * 2 + 1000 * 10) / 1e6)
+  close(requestCost(modelById('claude-opus-5-5'), 1000, 0, 100), 1000 * 0.2 / 1e6)
+  assert.equal(priceFor('claude-haiku-5-5', 150_000).id, 'claude-haiku-5-5-long')
+  assert.equal(priceFor('claude-haiku-5-5', 90_000).id, 'claude-haiku-5-5')
+})
+
+test('model routing: no-op routing costs the router; savings and break-even add up', () => {
+  const same = { ...DEFAULT_ROUTING, cachedPct: 0, model: { simple: 'claude-opus-5-5', standard: 'claude-opus-5-5', hard: 'claude-opus-5-5' }, escalationPct: { simple: 0, standard: 0, hard: 0 } }
+  const r0 = route(same)
+  close(r0.savings, -r0.routerCost, 1e-6)
+  const r = route(DEFAULT_ROUTING)
+  assert.ok(r.savings > 0 && r.savingsPct < 1)
+  close(r.routedCost, r.tiers.reduce((s, t) => s + t.cost, 0) + r.routerCost, 1e-6)
+  // At the break-even escalation rate, savings are zero.
+  const at = route({ ...DEFAULT_ROUTING, escalationPct: { ...DEFAULT_ROUTING.escalationPct, simple: r.breakEvenSimpleEscalationPct } })
+  if (r.breakEvenSimpleEscalationPct < 100) close(at.savings, 0, 1e-6)
+  // Shares that don't add to 100 are normalised.
+  const doubled = route({ ...DEFAULT_ROUTING, share: { simple: 120, standard: 60, hard: 20 } })
+  close(doubled.routedCost, r.routedCost, 1e-6)
+})
+
+// --- review staffing (Erlang C)
+test('erlang C matches the textbook value', () => {
+  close(erlangC(3, 2), 4 / 9, 1e-9) // C(3, 2) = 0.4444
+  assert.equal(erlangC(2, 2), 1)
+  assert.equal(erlangC(5, 0), 0)
+  // 10 Erlangs, 12 agents, 3-minute handle time, 20-second target: SL ≈ 0.64 in published tables
+  const sl = serviceLevel(12, 10, 3, 20 / 60)
+  assert.ok(sl > 0.6 && sl < 0.7, `sl=${sl}`)
+})
+
+test('review staffing: meets the target with the fewest reviewers', () => {
+  const r = staff(DEFAULT_STAFFING)
+  close(r.reviewsPerMonth, 9000 * 0.25)
+  assert.ok(r.reviewersOnShift > r.erlangs)
+  assert.ok(r.serviceLevel >= 0.9)
+  const one = staff({ ...DEFAULT_STAFFING })
+  const fewer = serviceLevel(one.reviewersOnShift - 1, one.erlangs, DEFAULT_STAFFING.minutesPerReview, DEFAULT_STAFFING.targetMinutes)
+  assert.ok(fewer < 0.9, 'one fewer reviewer should miss the target')
+  assert.ok(r.fte > r.workloadFte)
+  const none = staff({ ...DEFAULT_STAFFING, reviewPct: 0 })
+  assert.equal(none.reviewersOnShift, 0)
+  assert.equal(none.monthlyCost, 0)
+})
+
+// --- vendor scorecard
+test('vendor scorecard: scale, must-haves and swing criteria', () => {
+  const all5 = Object.fromEntries(VENDOR_CRITERIA.map(c => [c.id, 5]))
+  const all1 = Object.fromEntries(VENDOR_CRITERIA.map(c => [c.id, 1]))
+  close(weightedScore({ name: 'x', scores: all5 }, VENDOR_CRITERIA), 100)
+  close(weightedScore({ name: 'x', scores: all1 }, VENDOR_CRITERIA), 0)
+  const r = scorecard([{ name: 'Strong but insecure', scores: { ...all5, security: 2 } }, { name: 'Middling', scores: Object.fromEntries(VENDOR_CRITERIA.map(c => [c.id, 3])) }])
+  assert.equal(r.winner, 'Middling')
+  assert.deepEqual(r.ranked[1].failsMustHave, ['Security and compliance'])
+  const d = scorecard(DEFAULT_VENDORS)
+  assert.ok(d.winner)
+  assert.ok(d.ranked[0].score >= d.ranked[1].score)
+  // Two vendors that differ only on cost: cost is the swing criterion.
+  const tie = scorecard([{ name: 'A', scores: { ...Object.fromEntries(VENDOR_CRITERIA.map(c => [c.id, 3])), cost: 4, time: 2 } }, { name: 'B', scores: { ...Object.fromEntries(VENDOR_CRITERIA.map(c => [c.id, 3])), time: 3 } }])
+  assert.equal(tie.winner, 'A')
+  assert.ok(tie.swingCriteria.includes('Three-year total cost'))
+  assert.match(vendorMarkdown(DEFAULT_VENDORS, VENDOR_CRITERIA, d), /\| criterion \| weight \|/)
+})
+
+// --- DPIA
+test('DPIA: Art. 35(3) is mandatory, two criteria is likely, one is borderline', () => {
+  assert.equal(screen({ ...EMPTY_DPIA, mandatory: ['automated-evaluation'] }).verdict, 'required')
+  assert.equal(screen({ ...EMPTY_DPIA, criteria: ['scoring', 'innovative'] }).verdict, 'likely')
+  assert.equal(screen({ ...EMPTY_DPIA, criteria: ['innovative'] }).verdict, 'borderline')
+  assert.equal(screen(EMPTY_DPIA).verdict, 'not-indicated')
+  const r = screen({ ...EMPTY_DPIA, criteria: ['scoring', 'automated-decision'], solelyAutomated: true, transfersOutsideEea: true, euAiActHighRisk: true })
+  for (const ref of ['Art. 35(7)', 'Art. 36', 'Art. 22(2)–(3)', 'Art. 28', 'Art. 44–46', 'AI Act Art. 26(9)', 'Art. 30']) assert.ok(r.actions.some(a => a.ref === ref), ref)
+  assert.match(dpiaMarkdown(EMPTY_DPIA, screen(EMPTY_DPIA)), /not legal advice/)
 })

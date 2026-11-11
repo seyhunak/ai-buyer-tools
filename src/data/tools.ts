@@ -75,6 +75,58 @@ export const tools: Tool[] = [
       { q: "Does a big test set make the claim true?", a: "Only if the cases look like your real work. A thousand easy cases prove nothing about your hard ones. Build the test set from your own data, including the exceptions." },
     ],
   },
+  {
+    slug: "ai-model-routing-calculator",
+    name: "AI model routing calculator",
+    short: "What sending each request to the cheapest capable model saves",
+    description: "See what routing requests between Haiku, Sonnet and Opus saves against one model for everything, including the router call and retries.",
+    intro: "Most workloads are a mix: many easy requests, some ordinary ones, a few hard ones. Sending them all to the strongest model is simple and expensive. Put in your mix and the calculator shows what a router saves after paying for the routing call and for the requests that fail on a cheap model and have to run again.",
+    faqs: [
+      { q: "How does the router decide?", a: "Usually a small, fast model (or plain rules) reads the request, or its first part, and labels it simple, standard or hard. The cost of that call is included. Rules cost nothing per request, so set the router's tokens to zero if you route with code." },
+      { q: "What is the retry rate?", a: "The share of requests a cheaper model gets wrong, or flags as low confidence, that you then rerun one tier up. You pay for both attempts. The calculator shows the retry rate at which routing stops paying, so you know what to measure in a pilot." },
+      { q: "Does it include prompt caching?", a: "Cache reads, yes: set the share of input served from cache. Cache writes are left out because they depend on traffic patterns; the token cost estimator includes them." },
+      { q: "Which prices does it use?", a: "Claude API list prices per million tokens, the same table as the token cost estimator, with the date they were checked. Haiku prompts over 100K tokens bill at its long-context rate." },
+    ],
+  },
+  {
+    slug: "human-review-staffing-calculator",
+    name: "Human review staffing calculator",
+    short: "How many reviewers an AI workflow's escalations need",
+    description: "Work out how many people you need to review the cases an AI workflow escalates, within a response-time target, using Erlang C queueing.",
+    intro: "Every agent workflow with a human checkpoint creates a queue. Divide the review hours by a working month and you get the naive answer, which misses the target every busy afternoon. This calculator uses Erlang C, the model contact centres staff with, to find the reviewers you need at the busiest hour to pick cases up on time, then adds shrinkage.",
+    faqs: [
+      { q: "What is Erlang C?", a: "A queueing formula for work that arrives at random and is handled first come, first served by a pool of people. From the arrival rate, the handling time and the number of people, it gives the chance a case waits and how long. It is the standard way to staff contact centres and works the same way for review queues." },
+      { q: "What is shrinkage?", a: "The share of paid time people are not available to review: leave, sickness, training, meetings and breaks. 25–35% is common. Headcount is the reviewers needed on shift divided by one minus shrinkage." },
+      { q: "Why plan for the busiest hour?", a: "Cases bunch up. If Monday mornings bring 1.6 times the average hour, staffing for the average means Monday's cases miss the target. Set the busiest-hour factor from your own arrival data." },
+      { q: "What if the queue can wait a day?", a: "Then set a long pick-up target, such as 480 minutes. The answer falls towards the plain workload figure, because a queue with a slow target can absorb peaks." },
+    ],
+  },
+  {
+    slug: "ai-vendor-scorecard",
+    name: "AI vendor scorecard",
+    short: "Weighted comparison of AI vendors, with must-haves and a swing check",
+    description: "Compare up to three AI vendors or build options on weighted criteria, rule out any that fail a must-have, and see which weights decide the result.",
+    intro: "Vendor selections usually end in a weighted spreadsheet that nobody questions. This one does two extra things. A must-have rules a vendor out however well it scores elsewhere, and a swing check tells you which criteria decide the result, so you argue about the weights before the demos rather than after.",
+    faqs: [
+      { q: "How is the score calculated?", a: "A weighted average of the 1–5 scores, rescaled so all 1s is 0 and all 5s is 100. A weight of 0 leaves a criterion out." },
+      { q: "What does the swing check do?", a: "For each criterion it lowers the weight by one point and reranks. If the winner changes or ties, that criterion is listed: the decision rests on it, so it deserves the most evidence." },
+      { q: "How should I score accuracy?", a: "On a test set built from your own cases, with the hard ones included, run by every vendor under the same conditions. The accuracy proof calculator tells you how many cases you need for the result to mean something." },
+      { q: "Should building in-house be one of the options?", a: "Usually, yes. It sets the bar on control, audit trail and exit, and the build vs buy calculator gives you its three-year cost." },
+    ],
+  },
+  {
+    slug: "gdpr-dpia-screener",
+    name: "GDPR DPIA screener for AI",
+    short: "Does this AI use of personal data need a DPIA?",
+    description: "Check whether an AI system's use of personal data needs a GDPR data protection impact assessment, and what else applies, with article references.",
+    intro: "Under GDPR, processing that is likely to be high risk needs a data protection impact assessment before it starts. AI projects meet the tests more often than teams expect, because the guidelines list new technology as a criterion. Tick what applies and the screener tells you whether a DPIA is required and what else to put in place, with the articles to check.",
+    faqs: [
+      { q: "When is a DPIA mandatory?", a: "Always for the three cases in Art. 35(3): systematic automated evaluation with legal or similar effects, large-scale special-category or criminal data, and large-scale monitoring of public areas. Beyond those, the WP29 guidelines endorsed by the EDPB say processing that meets two of nine criteria needs one in most cases." },
+      { q: "Does using an LLM always need a DPIA?", a: "No. Using new technology is one criterion, so an LLM that processes personal data meets one already. Add a second, such as profiling, sensitive data or large scale, and a DPIA is usually required." },
+      { q: "How does this relate to the EU AI Act?", a: "Deployers of high-risk AI systems must use the provider's instructions for use in their DPIA (Art. 26(9)), and some deployers must also run a fundamental rights impact assessment (Art. 27). The EU AI Act auditor works out whether a system is high-risk." },
+      { q: "Is this legal advice?", a: "No. It is a screening aid. National supervisory authorities publish their own lists of processing that always needs a DPIA, so check yours and take the result to your data protection officer." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

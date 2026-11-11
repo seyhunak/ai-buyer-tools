@@ -1,6 +1,6 @@
 # AI buyer tools
 
-Five free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
+Nine free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
 
 | tool | what it answers |
 |---|---|
@@ -9,6 +9,10 @@ Five free, single-purpose tools for practical AI decisions. Hosted at **https://
 | [Agent workflow fit scorer](https://seyhunakyurek.com/tools/agent-workflow-fit-scorer) | Is this process a good fit for AI agents, and what shape? |
 | [AI build vs buy calculator](https://seyhunakyurek.com/tools/ai-build-vs-buy-calculator) | Three-year cost: SaaS tool, custom agents, or keep it manual |
 | [AI accuracy proof calculator](https://seyhunakyurek.com/tools/ai-accuracy-proof-calculator) | How many test cases prove a vendor's accuracy claim? |
+| [AI model routing calculator](https://seyhunakyurek.com/tools/ai-model-routing-calculator) | What sending each request to the cheapest capable model saves |
+| [Human review staffing calculator](https://seyhunakyurek.com/tools/human-review-staffing-calculator) | How many reviewers an AI workflow's escalations need |
+| [AI vendor scorecard](https://seyhunakyurek.com/tools/ai-vendor-scorecard) | Weighted comparison of AI vendors, with must-haves and a swing check |
+| [GDPR DPIA screener for AI](https://seyhunakyurek.com/tools/gdpr-dpia-screener) | Does this AI use of personal data need a DPIA? |
 
 Everything runs in the browser. Nothing you type is sent anywhere.
 
@@ -32,13 +36,18 @@ Links use hash routes (`#/ai-token-cost-estimator`), so `dist/` works from any f
   - `workflow-fit.ts`: the weighted fit score and the suggested workflow shape.
   - `build-vs-buy.ts`: cumulative cost of ownership and break-even month.
   - `accuracy.ts`: Wilson intervals, sample size, the zero-failure rule.
+  - `model-routing.ts`: cost of routing requests between model tiers versus one model, with router calls, retries and the break-even retry rate.
+  - `review-staffing.ts`: Erlang C staffing for a human review queue, with shrinkage and cost per review.
+  - `vendor-scorecard.ts`: weighted vendor scoring, must-have knockouts and the swing check.
+  - `dpia.ts`: GDPR Art. 35 DPIA screening against the WP248 criteria, with the obligations that follow.
 - `src/components/tools/`: the React UI, one component per tool, styled by `tools.css` and `src/theme.css`.
 - `tests/tools.test.mjs`: unit tests, including textbook values for the statistics.
 
 ## Caveats
 
 - **Prices change.** Check `pricing.ts` against https://platform.claude.com/docs/en/about-claude/pricing.
-- **The EU AI Act tool is a screening aid, not legal advice.** The Commission's Digital Omnibus proposal (November 2025) would move the high-risk dates. Check whether it has been adopted.
+- **The EU AI Act and GDPR DPIA tools are screening aids, not legal advice.** National data protection authorities publish their own DPIA lists (Art. 35(4)).
+- **The EU AI Act tool** The Commission's Digital Omnibus proposal (November 2025) would move the high-risk dates. Check whether it has been adopted.
 - **The fit scorer's weights and savings shares are judgement calls.** They are in the code so you can change them.
 
 ## License

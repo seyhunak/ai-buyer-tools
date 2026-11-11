@@ -63,3 +63,12 @@
 .tl-card-desc { color: hsl(var(--muted-foreground)); font-size: var(--text-sm); }
 .tl-card:active { border-color: var(--brass-deep); }
 .tl-back:active { color: hsl(var(--primary)); }
+/* Wide tools (the scorecard): the table needs the full width, the result sits under it. */
+.tl-app--wide { grid-template-columns: minmax(0, 1fr); }
+.tl-row--3 { grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); }
+.tl-grid th[scope="row"] { color: var(--color-ink-2); min-width: 14rem; }
+.tl-grid td { min-width: 5.5rem; }
+.tl-grid .tl-select { min-height: 40px; }
+.tl-crit { display: block; }
+.tl-box { width: 18px; height: 18px; accent-color: hsl(var(--primary)); }
+.tl-box:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }

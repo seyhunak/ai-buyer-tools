@@ -6,6 +6,10 @@ import EuAiActAuditor from "@/components/tools/EuAiActAuditor"
 import WorkflowFitScorer from "@/components/tools/WorkflowFitScorer"
 import BuildVsBuy from "@/components/tools/BuildVsBuy"
 import AccuracyProof from "@/components/tools/AccuracyProof"
+import ModelRouting from "@/components/tools/ModelRouting"
+import ReviewStaffing from "@/components/tools/ReviewStaffing"
+import VendorScorecard from "@/components/tools/VendorScorecard"
+import DpiaScreener from "@/components/tools/DpiaScreener"
 import "./theme.css"
 import "@/components/tools/tools.css"
 
@@ -15,6 +19,10 @@ const UI: Record<string, ComponentType> = {
   "agent-workflow-fit-scorer": WorkflowFitScorer,
   "ai-build-vs-buy-calculator": BuildVsBuy,
   "ai-accuracy-proof-calculator": AccuracyProof,
+  "ai-model-routing-calculator": ModelRouting,
+  "human-review-staffing-calculator": ReviewStaffing,
+  "ai-vendor-scorecard": VendorScorecard,
+  "gdpr-dpia-screener": DpiaScreener,
 }
 
 // Hash routes (#/ai-token-cost-estimator) so the build works on any static host.

@@ -1,6 +1,6 @@
 # AI buyer tools
 
-Nine free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
+Eleven free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
 
 | tool | what it answers |
 |---|---|
@@ -13,6 +13,8 @@ Nine free, single-purpose tools for practical AI decisions. Hosted at **https://
 | [Human review staffing calculator](https://seyhunakyurek.com/tools/human-review-staffing-calculator) | How many reviewers an AI workflow's escalations need |
 | [AI vendor scorecard](https://seyhunakyurek.com/tools/ai-vendor-scorecard) | Weighted comparison of AI vendors, with must-haves and a swing check |
 | [GDPR DPIA screener for AI](https://seyhunakyurek.com/tools/gdpr-dpia-screener) | Does this AI use of personal data need a DPIA? |
+| [Agent loop cost calculator](https://seyhunakyurek.com/tools/agent-loop-cost-calculator) | What a tool-calling agent costs per task as its context grows |
+| [LLM judge agreement calculator](https://seyhunakyurek.com/tools/llm-judge-agreement-calculator) | Does your LLM judge agree with people beyond chance? Cohen's kappa |
 
 Everything runs in the browser. Nothing you type is sent anywhere.
 
@@ -40,6 +42,8 @@ Links use hash routes (`#/ai-token-cost-estimator`), so `dist/` works from any f
   - `review-staffing.ts`: Erlang C staffing for a human review queue, with shrinkage and cost per review.
   - `vendor-scorecard.ts`: weighted vendor scoring, must-have knockouts and the swing check.
   - `dpia.ts`: GDPR Art. 35 DPIA screening against the WP248 criteria, with the obligations that follow.
+  - `agent-loop.ts`: turn-by-turn cost of a tool-calling agent loop as its context grows, with incremental prompt caching and the context-window limit.
+  - `judge-agreement.ts`: Cohen's kappa between an LLM judge and human labels, with an interval, PABAK, catch and false-alarm rates.
 - `src/components/tools/`: the React UI, one component per tool, styled by `tools.css` and `src/theme.css`.
 - `tests/tools.test.mjs`: unit tests, including textbook values for the statistics.
 

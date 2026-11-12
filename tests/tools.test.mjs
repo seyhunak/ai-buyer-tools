@@ -11,6 +11,8 @@ import { route, requestCost, priceFor, DEFAULT_ROUTING } from '../src/lib/tools/
 import { erlangC, serviceLevel, staff, DEFAULT_STAFFING } from '../src/lib/tools/review-staffing.ts'
 import { scorecard, weightedScore, CRITERIA as VENDOR_CRITERIA, DEFAULT_VENDORS, toMarkdown as vendorMarkdown } from '../src/lib/tools/vendor-scorecard.ts'
 import { screen, EMPTY_DPIA, toMarkdown as dpiaMarkdown } from '../src/lib/tools/dpia.ts'
+import { loopCost, loopOnEveryModel, DEFAULT_LOOP } from '../src/lib/tools/agent-loop.ts'
+import { agreement, strengthOf, DEFAULT_AGREEMENT } from '../src/lib/tools/judge-agreement.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -220,4 +222,68 @@ test('DPIA: Art. 35(3) is mandatory, two criteria is likely, one is borderline',
   const r = screen({ ...EMPTY_DPIA, criteria: ['scoring', 'automated-decision'], solelyAutomated: true, transfersOutsideEea: true, euAiActHighRisk: true })
   for (const ref of ['Art. 35(7)', 'Art. 36', 'Art. 22(2)–(3)', 'Art. 28', 'Art. 44–46', 'AI Act Art. 26(9)', 'Art. 30']) assert.ok(r.actions.some(a => a.ref === ref), ref)
   assert.match(dpiaMarkdown(EMPTY_DPIA, screen(EMPTY_DPIA)), /not legal advice/)
+})
+
+// --- agent loop
+test('agent loop: context grows each turn and is priced at list rates', () => {
+  const r = loopCost({ ...DEFAULT_LOOP, caching: false })
+  // 12 turns, 8,000 + 3,000 to start, +3,100 a turn (2,500 tool result + 600 output)
+  assert.equal(r.turns.length, 12)
+  assert.equal(r.finalContext, 11000 + 11 * 3100)
+  assert.equal(r.inputTokensPerTask, 12 * 11000 + 3100 * 66)
+  close(r.costPerTask, (336600 * 2 + 7200 * 10) / 1e6)
+  close(r.monthlyCost, r.costPerTask * 2000, 1e-6)
+  assert.equal(r.overflowTurn, null)
+})
+
+test('agent loop: caching reads the previous prompt and writes only the new tail', () => {
+  const r = loopCost(DEFAULT_LOOP)
+  // reads: prefix on turn 1, then the previous turn's full prompt; writes: the task, then 3,100 a turn
+  const reads = 8000 + 11 * 11000 + 3100 * 55, writes = 3000 + 11 * 3100
+  close(r.costPerTask, (reads * 0.1 + writes * 2.5 + 7200 * 10) / 1e6)
+  close(r.uncachedCostPerTask, loopCost({ ...DEFAULT_LOOP, caching: false }).costPerTask)
+  assert.ok(r.cachingSavingsPct > 70 && r.cachingSavingsPct < 75)
+  // one turn with no growth costs the same as a single call
+  const one = loopCost({ ...DEFAULT_LOOP, turns: 1, caching: false })
+  close(one.costPerTask, one.singleCallCost)
+})
+
+test('agent loop: overflow, Haiku long-context tier, junk input', () => {
+  const big = loopCost({ ...DEFAULT_LOOP, turns: 80, toolResultTokens: 5000 })
+  assert.ok(big.overflowTurn !== null && big.overflowTurn > 1)
+  assert.ok(big.turns[big.overflowTurn - 2].context + 600 <= 200000)
+  const h = loopCost({ ...DEFAULT_LOOP, model: 'claude-haiku-5-5', turns: 2, prefixTokens: 0, taskTokens: 150000, toolResultTokens: 0, outputTokens: 0, caching: false })
+  close(h.turns[0].cost, 150000 * 0.5 / 1e6) // over 100K: long-context input rate
+  assert.equal(loopOnEveryModel(DEFAULT_LOOP).some((x) => x.model.id === 'claude-haiku-5-5-long'), false)
+  const bad = loopCost({ ...DEFAULT_LOOP, turns: NaN, tasksPerMonth: -3, prefixTokens: -1 })
+  assert.equal(bad.turns.length, 1)
+  assert.equal(bad.monthlyCost, 0)
+})
+
+// --- judge agreement
+test('kappa matches the textbook value (20/5/10/15 -> 0.40)', () => {
+  const r = agreement({ bothPass: 20, judgePassHumanFail: 5, judgeFailHumanPass: 10, bothFail: 15, confidencePct: 95, targetKappa: 0.6 })
+  close(r.observed, 0.7)
+  close(r.expected, 0.5)
+  close(r.kappa, 0.4, 1e-12)
+  assert.equal(r.strength, 'fair')
+  close(r.catchRate, 0.75)
+  close(r.falseAlarmRate, 1 / 3)
+  assert.equal(r.verdict, 'unclear')
+})
+
+test('kappa: verdicts, prevalence paradox, edge cases', () => {
+  const strong = agreement({ bothPass: 900, judgePassHumanFail: 10, judgeFailHumanPass: 10, bothFail: 300, confidencePct: 95, targetKappa: 0.6 })
+  assert.equal(strong.verdict, 'meets')
+  const weak = agreement({ bothPass: 300, judgePassHumanFail: 100, judgeFailHumanPass: 100, bothFail: 100, confidencePct: 95, targetKappa: 0.6 })
+  assert.equal(weak.verdict, 'below')
+  // rare failures: 96% agreement, but kappa far lower than PABAK
+  const rare = agreement({ bothPass: 950, judgePassHumanFail: 20, judgeFailHumanPass: 20, bothFail: 10, confidencePct: 95, targetKappa: 0.6 })
+  assert.ok(rare.observed === 0.96 && rare.kappa < 0.35 && rare.pabak > 0.9)
+  assert.equal(agreement({ ...DEFAULT_AGREEMENT, bothPass: 0, judgePassHumanFail: 0, judgeFailHumanPass: 0, bothFail: 0 }).verdict, 'no-data')
+  assert.equal(agreement({ ...DEFAULT_AGREEMENT, judgePassHumanFail: 0, judgeFailHumanPass: 0, bothFail: 0 }).kappa, 1)
+  assert.deepEqual([strengthOf(-0.1), strengthOf(0.2), strengthOf(0.61), strengthOf(0.81)], ['worse than chance', 'slight', 'substantial', 'almost perfect'])
+  // narrower interval with more cases
+  const x10 = agreement({ ...DEFAULT_AGREEMENT, bothPass: 1620, judgePassHumanFail: 90, judgeFailHumanPass: 70, bothFail: 220 })
+  assert.ok(x10.kappaHigh - x10.kappaLow < agreement(DEFAULT_AGREEMENT).kappaHigh - agreement(DEFAULT_AGREEMENT).kappaLow)
 })

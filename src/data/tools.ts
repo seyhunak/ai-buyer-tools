@@ -127,6 +127,32 @@ export const tools: Tool[] = [
       { q: "Is this legal advice?", a: "No. It is a screening aid. National supervisory authorities publish their own lists of processing that always needs a DPIA, so check yours and take the result to your data protection officer." },
     ],
   },
+  {
+    slug: "agent-loop-cost-calculator",
+    name: "Agent loop cost calculator",
+    short: "What a tool-calling agent costs per task as its context grows",
+    description: "Price a tool-calling agent loop turn by turn: context growth, cost per task and per month, what prompt caching saves, and when the context window runs out.",
+    intro: "An agent that calls tools does not make one API call per task. It makes one per step, and each call re-sends everything so far: the instructions, the task, and every earlier tool result. Twelve steps can cost several times what the same tokens would cost in one call. Put in the shape of your loop and see the cost turn by turn, with and without prompt caching.",
+    faqs: [
+      { q: "Why does cost grow faster than the number of steps?", a: "Because input grows every turn. Turn ten reads the instructions, the task and nine tool results; turn eleven reads all of that plus one more. Total input grows roughly with the square of the number of turns, so halving the steps more than halves the input bill." },
+      { q: "How is caching modelled?", a: "With a cache breakpoint at the end of each prompt. On every turn, what the previous turn sent is read from cache and only the new tool result and output are written. The shared system prompt and tool definitions are assumed warm, which holds when tasks keep arriving within the 5-minute cache lifetime." },
+      { q: "What does output kept in context mean?", a: "The share of each turn's output that later turns re-read. Tool calls and visible text stay in the conversation. If your setup drops earlier thinking from the history, lower this to the visible share." },
+      { q: "How do I bring the cost down?", a: "Fewer turns (let a tool do more per call), shorter tool results (return the fields the agent needs, not the whole record), caching on, and a smaller model for steps that only route or extract. The model table shows the same loop on every Claude model." },
+    ],
+  },
+  {
+    slug: "llm-judge-agreement-calculator",
+    name: "LLM judge agreement calculator",
+    short: "Does your LLM judge agree with people beyond chance? Cohen's kappa",
+    description: "Compare an LLM judge's pass/fail labels with a person's on the same cases: Cohen's kappa with an interval, catch rate, false alarms, and cases needed.",
+    intro: "Before an LLM judge grades your agent, or an agent's own pass/fail call gates real work, check it against people. Label the same cases twice and count the four boxes. Raw agreement flatters a judge when most cases pass; Cohen's kappa takes out the agreement you would get by chance, and the interval tells you whether you labelled enough cases to trust it.",
+    faqs: [
+      { q: "What is a good kappa?", a: "On the Landis and Koch scale, 0.41–0.60 is moderate, 0.61–0.80 substantial and above 0.80 almost perfect. Use 0.6 as a floor for a judge that informs people, and aim for 0.8 before a judge gates work automatically. Check the lower end of the interval, not the point estimate." },
+      { q: "Why is kappa low when agreement is 95%?", a: "If 95% of cases pass, two raters who say pass almost every time agree 90% of the time by luck. Kappa only credits agreement beyond that. This is the kappa paradox; the prevalence-adjusted figure (PABAK) is shown when failures are rare, and the catch rate tells you directly how many real failures the judge finds." },
+      { q: "How many cases should I label?", a: "Enough for the kappa interval to sit above your bar. The calculator shows how many cases give a range of about ±0.1 at your current agreement. A few hundred is typical, and the set must include the hard cases, or the judge is only tested on easy ones." },
+      { q: "Should the human labels come from one person?", a: "Ideally two people label independently first. Their kappa with each other is the ceiling: a judge cannot be expected to agree with one person more than a second person does." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

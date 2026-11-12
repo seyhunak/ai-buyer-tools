@@ -10,6 +10,8 @@ import ModelRouting from "@/components/tools/ModelRouting"
 import ReviewStaffing from "@/components/tools/ReviewStaffing"
 import VendorScorecard from "@/components/tools/VendorScorecard"
 import DpiaScreener from "@/components/tools/DpiaScreener"
+import AgentLoopCost from "@/components/tools/AgentLoopCost"
+import JudgeAgreement from "@/components/tools/JudgeAgreement"
 import "./theme.css"
 import "@/components/tools/tools.css"
 
@@ -23,6 +25,8 @@ const UI: Record<string, ComponentType> = {
   "human-review-staffing-calculator": ReviewStaffing,
   "ai-vendor-scorecard": VendorScorecard,
   "gdpr-dpia-screener": DpiaScreener,
+  "agent-loop-cost-calculator": AgentLoopCost,
+  "llm-judge-agreement-calculator": JudgeAgreement,
 }
 
 // Hash routes (#/ai-token-cost-estimator) so the build works on any static host.

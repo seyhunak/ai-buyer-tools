@@ -1,17 +1,18 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { judgeClaim, requiredSampleSize, zeroFailureTests } from "@/lib/tools/accuracy"
 import { NumberField, Stat, num, pct } from "./fields"
 
 const LEVELS = [80, 90, 95, 99]
 
 export default function AccuracyProof() {
-  const [claimed, setClaimed] = useState(95)
-  const [n, setN] = useState(50)
-  const [passes, setPasses] = useState(48)
-  const [conf, setConf] = useState(95)
-  const [target, setTarget] = useState(90)
-  const [expected, setExpected] = useState(95)
+  const [claimed, setClaimed] = useUrlState("claimed", 95)
+  const [n, setN] = useUrlState("n", 50)
+  const [passes, setPasses] = useUrlState("passes", 48)
+  const [conf, setConf] = useUrlState("conf", 95)
+  const [target, setTarget] = useUrlState("target", 90)
+  const [expected, setExpected] = useUrlState("expected", 95)
 
   const claim = useMemo(() => judgeClaim(claimed / 100, Math.min(passes, n), n, conf), [claimed, passes, n, conf])
   const need = useMemo(() => requiredSampleSize(target / 100, expected / 100, conf), [target, expected, conf])

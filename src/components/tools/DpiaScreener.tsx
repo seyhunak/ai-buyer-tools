@@ -1,12 +1,13 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { CRITERIA, EMPTY_DPIA, MANDATORY, screen, toMarkdown, type DpiaAnswers } from "@/lib/tools/dpia"
 import { Check } from "./fields"
 
 const VERDICT_LABEL = { required: "required", likely: "likely required", borderline: "borderline", "not-indicated": "not indicated" }
 
 export default function DpiaScreener() {
-  const [a, setA] = useState<DpiaAnswers>(EMPTY_DPIA)
+  const [a, setA] = useUrlState<DpiaAnswers>("a", EMPTY_DPIA)
   const [copied, setCopied] = useState(false)
   const r = useMemo(() => screen(a), [a])
   const set = <K extends keyof DpiaAnswers>(k: K, v: DpiaAnswers[K]) => { setCopied(false); setA((s) => ({ ...s, [k]: v })) }

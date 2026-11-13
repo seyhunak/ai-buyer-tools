@@ -1,6 +1,6 @@
 # AI buyer tools
 
-Eleven free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
+Twelve free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
 
 | tool | what it answers |
 |---|---|
@@ -15,6 +15,7 @@ Eleven free, single-purpose tools for practical AI decisions. Hosted at **https:
 | [GDPR DPIA screener for AI](https://seyhunakyurek.com/tools/gdpr-dpia-screener) | Does this AI use of personal data need a DPIA? |
 | [Agent loop cost calculator](https://seyhunakyurek.com/tools/agent-loop-cost-calculator) | What a tool-calling agent costs per task as its context grows |
 | [LLM judge agreement calculator](https://seyhunakyurek.com/tools/llm-judge-agreement-calculator) | Does your LLM judge agree with people beyond chance? Cohen's kappa |
+| [Escalation threshold calculator](https://seyhunakyurek.com/tools/escalation-threshold-calculator) | At what confidence should an AI workflow hand a case to a person? |
 
 Everything runs in the browser. Nothing you type is sent anywhere.
 

@@ -12,6 +12,8 @@ import VendorScorecard from "@/components/tools/VendorScorecard"
 import DpiaScreener from "@/components/tools/DpiaScreener"
 import AgentLoopCost from "@/components/tools/AgentLoopCost"
 import JudgeAgreement from "@/components/tools/JudgeAgreement"
+import EscalationThreshold from "@/components/tools/EscalationThreshold"
+import ShareResult from "@/components/tools/ShareResult"
 import "./theme.css"
 import "@/components/tools/tools.css"
 
@@ -27,6 +29,7 @@ const UI: Record<string, ComponentType> = {
   "gdpr-dpia-screener": DpiaScreener,
   "agent-loop-cost-calculator": AgentLoopCost,
   "llm-judge-agreement-calculator": JudgeAgreement,
+  "escalation-threshold-calculator": EscalationThreshold,
 }
 
 // Hash routes (#/ai-token-cost-estimator) so the build works on any static host.

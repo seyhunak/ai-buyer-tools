@@ -1,10 +1,11 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { DEFAULT_STAFFING, staff, type StaffingInput } from "@/lib/tools/review-staffing"
 import { NumberField, Stat, num, pct, usd } from "./fields"
 
 export default function ReviewStaffing() {
-  const [v, setV] = useState<StaffingInput>(DEFAULT_STAFFING)
+  const [v, setV] = useUrlState<StaffingInput>("v", DEFAULT_STAFFING)
   const set = (k: keyof StaffingInput) => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const r = useMemo(() => staff(v), [v])
   return (

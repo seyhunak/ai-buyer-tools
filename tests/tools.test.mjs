@@ -13,6 +13,7 @@ import { scorecard, weightedScore, CRITERIA as VENDOR_CRITERIA, DEFAULT_VENDORS,
 import { screen, EMPTY_DPIA, toMarkdown as dpiaMarkdown } from '../src/lib/tools/dpia.ts'
 import { loopCost, loopOnEveryModel, DEFAULT_LOOP } from '../src/lib/tools/agent-loop.ts'
 import { agreement, strengthOf, DEFAULT_AGREEMENT } from '../src/lib/tools/judge-agreement.ts'
+import { thresholds, breakEven, BANDS, DEFAULT_ESCALATION } from '../src/lib/tools/escalation-threshold.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -286,4 +287,100 @@ test('kappa: verdicts, prevalence paradox, edge cases', () => {
   // narrower interval with more cases
   const x10 = agreement({ ...DEFAULT_AGREEMENT, bothPass: 1620, judgePassHumanFail: 90, judgeFailHumanPass: 70, bothFail: 220 })
   assert.ok(x10.kappaHigh - x10.kappaLow < agreement(DEFAULT_AGREEMENT).kappaHigh - agreement(DEFAULT_AGREEMENT).kappaLow)
+})
+
+// --- escalation threshold
+test('escalation: defaults price every threshold exactly and pick the top band only', () => {
+  const r = thresholds(DEFAULT_ESCALATION)
+  assert.equal(r.options.length, BANDS.length + 1)
+  assert.ok(r.sharesOk)
+  close(r.reviewCostPerCase, 4) // 6 min at $40/h
+  // k = 0: review all 10,000; 1% residual human error
+  const all = r.options[0]
+  assert.deepEqual([all.autoRate, all.autoCases, all.reviewedCases], [0, 0, 10000])
+  close(all.errors, 100, 1e-9)
+  close(all.totalCost, 10000 * 4 + 100 * 150, 1e-6)
+  // k = 1: auto 5,500 at 98.5%, review 4,500
+  const one = r.options[1]
+  close(one.autoRate, 0.55)
+  close(one.autoErrors, 82.5, 1e-9)
+  close(one.humanErrors, 45, 1e-9)
+  close(one.reviewCost, 18000, 1e-6)
+  close(one.errorCost, 127.5 * 150, 1e-6)
+  close(one.totalCost, 37125, 1e-6)
+  close(one.costPerCase, 3.7125, 1e-9)
+  // k = 2 adds 2,000 cases at 95%: 100 more errors, 2,000 fewer reviews
+  close(r.options[2].totalCost, 2500 * 4 + (82.5 + 100 + 25) * 150, 1e-6)
+  // k = 5: nothing reviewed
+  const none = r.options[5]
+  assert.equal(none.reviewedCases, 0)
+  close(none.errors, 10000 * (0.55 * 0.015 + 0.2 * 0.05 + 0.12 * 0.12 + 0.08 * 0.25 + 0.05 * 0.45), 1e-6)
+  assert.equal(r.best.autoBands, 1)
+  assert.equal(r.best.threshold, '0.95 and above')
+  close(r.savingsVsAllReview, 55000 - 37125, 1e-6)
+  assert.ok(r.savingsVsAllAuto > 0)
+  assert.equal(r.uncalibrated, false)
+  // the recommendation is the cheapest of the six
+  assert.equal(Math.min(...r.options.map((o) => o.totalCost)), r.best.totalCost)
+})
+
+test('escalation: break-even accuracy and per-band verdicts', () => {
+  // $150 error, $4 review, 99% reviewers: 1 - (4 + 1.5) / 150
+  close(breakEven(150, 4, 0.99), 1 - 5.5 / 150)
+  const r = thresholds(DEFAULT_ESCALATION)
+  close(r.breakEvenAccuracy, 1 - 5.5 / 150)
+  assert.deepEqual(r.bands.map((b) => b.autoCheaper), [true, false, false, false, false])
+  // at exactly the break-even accuracy, both sides cost the same
+  const be = r.breakEvenAccuracy
+  close(150 * (1 - be), 4 + 150 * 0.01, 1e-9)
+  close(r.bands[0].autoCostPerCase, 2.25, 1e-9)
+  close(r.bands[0].reviewCostPerCase, 5.5, 1e-9)
+  assert.equal(breakEven(0, 4, 0.99), null)
+  assert.ok(breakEven(2, 4, 0.99) < 0) // errors cheaper than a review: auto always pays
+  // dearer errors push the threshold up; cheaper reviews do too
+  assert.equal(thresholds({ ...DEFAULT_ESCALATION, errorCost: 5000 }).best.autoBands, 0)
+  assert.equal(thresholds({ ...DEFAULT_ESCALATION, errorCost: 20 }).best.autoBands, 3) // $4.20 a review beats $5 of error at 75%
+  assert.equal(thresholds({ ...DEFAULT_ESCALATION, errorCost: 8 }).best.autoBands, 5)
+  assert.ok(thresholds({ ...DEFAULT_ESCALATION, hourlyCost: 200 }).best.autoBands > 1)
+})
+
+test('escalation: shares that do not add up to 100 are normalised and flagged', () => {
+  const doubled = thresholds({ ...DEFAULT_ESCALATION, bands: DEFAULT_ESCALATION.bands.map((b) => ({ ...b, sharePct: b.sharePct * 2 })) })
+  assert.equal(doubled.sharesOk, false)
+  assert.equal(doubled.sharesTotal, 200)
+  const base = thresholds(DEFAULT_ESCALATION)
+  doubled.options.forEach((o, k) => close(o.totalCost, base.options[k].totalCost, 1e-6))
+  assert.equal(doubled.best.autoBands, base.best.autoBands)
+  const short = thresholds({ ...DEFAULT_ESCALATION, bands: [{ sharePct: 50, accuracyPct: 99 }, { sharePct: 0, accuracyPct: 90 }, { sharePct: 0, accuracyPct: 80 }, { sharePct: 0, accuracyPct: 70 }, { sharePct: 0, accuracyPct: 50 }] })
+  assert.equal(short.sharesOk, false)
+  close(short.options[1].autoRate, 1) // the only band holds every case
+  assert.ok(thresholds({ ...DEFAULT_ESCALATION, bands: DEFAULT_ESCALATION.bands.map((b, i) => ({ ...b, sharePct: i === 0 ? 55.01 : b.sharePct })) }).sharesOk)
+})
+
+test('escalation: zero volume, 0% and 100% accuracy, junk input', () => {
+  const zero = thresholds({ ...DEFAULT_ESCALATION, casesPerMonth: 0 })
+  assert.ok(zero.options.every((o) => o.totalCost === 0 && o.costPerCase === 0))
+  assert.equal(zero.best.autoBands, 0) // a tie keeps the cautious option
+  const perfect = thresholds({ ...DEFAULT_ESCALATION, bands: DEFAULT_ESCALATION.bands.map((b) => ({ ...b, accuracyPct: 100 })) })
+  assert.equal(perfect.best.autoBands, 5)
+  assert.equal(perfect.options[5].errors, 0)
+  assert.equal(perfect.options[5].totalCost, 0)
+  const hopeless = thresholds({ ...DEFAULT_ESCALATION, bands: DEFAULT_ESCALATION.bands.map((b) => ({ ...b, accuracyPct: 0 })) })
+  assert.equal(hopeless.best.autoBands, 0)
+  close(hopeless.options[5].errors, 10000)
+  // perfect reviewers: reviewed cases carry no errors
+  const humans = thresholds({ ...DEFAULT_ESCALATION, humanAccuracyPct: 100 })
+  assert.equal(humans.options[0].errors, 0)
+  close(humans.breakEvenAccuracy, 1 - 4 / 150)
+  // accuracy above 100 is capped; negatives and NaN count as zero
+  const junk = thresholds({ casesPerMonth: NaN, bands: [{ sharePct: -5, accuracyPct: 140 }], errorCost: -1, minutesPerReview: NaN, hourlyCost: 40, humanAccuracyPct: 120 })
+  assert.equal(junk.sharesTotal, 0)
+  assert.ok(junk.options.every((o) => o.totalCost === 0))
+  assert.equal(junk.breakEvenAccuracy, null)
+  assert.equal(thresholds({ ...DEFAULT_ESCALATION, bands: [] }).sharesOk, false)
+})
+
+test('escalation: flags bands whose accuracy rises as confidence falls', () => {
+  const bands = DEFAULT_ESCALATION.bands.map((b, i) => (i === 2 ? { ...b, accuracyPct: 97 } : b))
+  assert.equal(thresholds({ ...DEFAULT_ESCALATION, bands }).uncalibrated, true)
 })

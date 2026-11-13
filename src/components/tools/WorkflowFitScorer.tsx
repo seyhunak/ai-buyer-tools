@@ -1,10 +1,11 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { DEFAULT_FIT, scoreFit, type FitInput } from "@/lib/tools/workflow-fit"
 import { NumberField, RatingField, Stat, num, usd } from "./fields"
 
 export default function WorkflowFitScorer() {
-  const [v, setV] = useState<FitInput>(DEFAULT_FIT)
+  const [v, setV] = useUrlState<FitInput>("v", DEFAULT_FIT)
   const set = (k: keyof FitInput) => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const r = useMemo(() => scoreFit(v), [v])
   return (

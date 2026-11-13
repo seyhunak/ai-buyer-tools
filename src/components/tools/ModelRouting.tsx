@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { MODELS, PRICES_CHECKED } from "@/lib/tools/pricing"
 import { DEFAULT_ROUTING, TIERS, route, type RoutingInput, type Tier } from "@/lib/tools/model-routing"
 import { NumberField, Stat, num, pct, usd } from "./fields"
@@ -25,7 +26,7 @@ function ModelSelect({ id, label, value, onChange }: { id: string; label: string
 }
 
 export default function ModelRouting() {
-  const [v, setV] = useState<RoutingInput>(DEFAULT_ROUTING)
+  const [v, setV] = useUrlState<RoutingInput>("v", DEFAULT_ROUTING)
   const set = (k: "requestsPerMonth" | "inputTokens" | "outputTokens" | "cachedPct" | "routerInputTokens") => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const setTier = (k: "share" | "escalationPct", t: Tier) => (n: number) => setV((s) => ({ ...s, [k]: { ...s[k], [t]: n } }))
   const setModel = (t: Tier) => (id: string) => setV((s) => ({ ...s, model: { ...s.model, [t]: id } }))

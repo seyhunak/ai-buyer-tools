@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { DEFAULT_BVB, compare, type BvbInput } from "@/lib/tools/build-vs-buy"
 import { NumberField, Stat, usd } from "./fields"
 
@@ -34,7 +35,7 @@ function Chart({ r }: { r: ReturnType<typeof compare> }) {
 }
 
 export default function BuildVsBuy() {
-  const [v, setV] = useState<BvbInput>(DEFAULT_BVB)
+  const [v, setV] = useUrlState<BvbInput>("v", DEFAULT_BVB)
   const set = (k: keyof BvbInput) => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const r = useMemo(() => compare(v), [v])
   const name = { manual: "keep it manual", buy: "buy a SaaS tool", build: "build an agent workflow" }

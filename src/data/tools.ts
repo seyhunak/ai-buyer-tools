@@ -153,6 +153,20 @@ export const tools: Tool[] = [
       { q: "Should the human labels come from one person?", a: "Ideally two people label independently first. Their kappa with each other is the ceiling: a judge cannot be expected to agree with one person more than a second person does." },
     ],
   },
+  {
+    slug: "escalation-threshold-calculator",
+    name: "Escalation threshold calculator",
+    short: "At what confidence should an AI workflow hand a case to a person?",
+    description: "Find the model-confidence threshold where an AI workflow should auto-complete cases or send them to a person, from what an error and a review cost.",
+    intro: "Most AI workflows give each case a confidence score and send the low ones to a person. Where you draw that line is a cost question: set it too low and errors get through, too high and people review cases the model already got right. Put in how your cases spread across confidence bands, how accurate the model is in each, and what an error and a review cost. You get the cheapest threshold and every alternative next to it.",
+    faqs: [
+      { q: "How do I measure accuracy in each band?", a: "Take a golden set: a few hundred recent cases a person has labelled carefully, including the hard ones. Run the model on them, group the cases by its confidence score, and count how often it was right in each group. Bands with few cases have wide error bars; the accuracy proof calculator shows how many cases you need." },
+      { q: "Why does calibration matter?", a: "A threshold only works if higher confidence really means higher accuracy. Many models are overconfident: a score of 0.9 might be right 80% of the time. The calculator uses the accuracy you measured in each band, not the score itself, and warns you when accuracy does not fall as confidence falls. Re-measure after every model or prompt change, because calibration moves." },
+      { q: "Why isn't human review counted as error-free?", a: "Because it isn't. Reviewers working through a queue miss errors, especially when the model is usually right and they stop looking closely. Measure it the same way as the model: give reviewers seeded cases with known answers. If review catches 99% of errors, 1% still get through, and that is part of what each review costs." },
+      { q: "What if the law or a regulator requires a person to decide?", a: "Then keep the person, whatever the numbers say. Credit, hiring, insurance, medical and other decisions with legal or similarly significant effects can require human involvement under GDPR Article 22 and human oversight under the EU AI Act. Use the calculator to size that review, not to remove it." },
+      { q: "What should an error cost include?", a: "What one undetected mistake costs once it reaches a customer or a ledger: the rework, refunds or credits, penalties, the support time, and a fair share of lost customers. If errors differ a lot in size, run the calculator once with the typical cost and once with the worst plausible one." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

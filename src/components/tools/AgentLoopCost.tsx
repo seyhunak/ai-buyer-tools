@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { DEFAULT_LOOP, loopCost, loopOnEveryModel, type LoopInput, type LoopResult } from "@/lib/tools/agent-loop"
 import { MODELS, PRICES_CHECKED } from "@/lib/tools/pricing"
 import { Check, NumberField, Stat, num, pct, usd } from "./fields"
@@ -30,7 +31,7 @@ function Chart({ r }: { r: LoopResult }) {
 }
 
 export default function AgentLoopCost() {
-  const [v, setV] = useState<LoopInput>(DEFAULT_LOOP)
+  const [v, setV] = useUrlState<LoopInput>("v", DEFAULT_LOOP)
   const set = (k: keyof LoopInput) => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const r = useMemo(() => loopCost(v), [v])
   const cached = useMemo(() => (v.caching ? r : loopCost({ ...v, caching: true })), [v, r])

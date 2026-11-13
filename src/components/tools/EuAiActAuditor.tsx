@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { ANNEX_III, EMPTY_ANSWERS, PROHIBITED, TRANSPARENCY, classify, toMarkdown, type Answers, type Role } from "@/lib/tools/eu-ai-act"
 import { Check } from "./fields"
 
@@ -12,7 +13,7 @@ const ROLES: { id: Role; label: string }[] = [
 const TIER_LABEL = { "out-of-scope": "out of scope", exempt: "exempt", prohibited: "prohibited", "high-risk": "high-risk", limited: "limited risk", minimal: "minimal risk" }
 
 export default function EuAiActAuditor() {
-  const [a, setA] = useState<Answers>(EMPTY_ANSWERS)
+  const [a, setA] = useUrlState<Answers>("a", EMPTY_ANSWERS)
   const [copied, setCopied] = useState(false)
   const r = useMemo(() => classify(a), [a])
   const set = <K extends keyof Answers>(k: K, v: Answers[K]) => { setCopied(false); setA((s) => ({ ...s, [k]: v })) }

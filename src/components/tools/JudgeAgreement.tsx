@@ -1,5 +1,6 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { DEFAULT_AGREEMENT, agreement, type AgreementInput } from "@/lib/tools/judge-agreement"
 import { NumberField, Stat, num, pct } from "./fields"
 
@@ -12,7 +13,7 @@ const VERDICT = {
 }
 
 export default function JudgeAgreement() {
-  const [v, setV] = useState<AgreementInput>(DEFAULT_AGREEMENT)
+  const [v, setV] = useUrlState<AgreementInput>("v", DEFAULT_AGREEMENT)
   const set = (k: keyof AgreementInput) => (n: number) => setV((s) => ({ ...s, [k]: n }))
   const r = useMemo(() => agreement(v), [v])
   const k2 = (x: number) => num(x, 2)

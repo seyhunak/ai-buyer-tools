@@ -1,13 +1,14 @@
 "use client"
 import { useMemo, useState } from "react"
+import { useUrlState } from "./useUrlState"
 import { CRITERIA, DEFAULT_VENDORS, scorecard, toMarkdown, type Criterion, type Vendor } from "@/lib/tools/vendor-scorecard"
 import { num } from "./fields"
 
 const SCORES = [1, 2, 3, 4, 5]
 
 export default function VendorScorecard() {
-  const [criteria, setCriteria] = useState<Criterion[]>(CRITERIA)
-  const [vendors, setVendors] = useState<Vendor[]>(DEFAULT_VENDORS)
+  const [criteria, setCriteria] = useUrlState<Criterion[]>("c", CRITERIA)
+  const [vendors, setVendors] = useUrlState<Vendor[]>("v", DEFAULT_VENDORS)
   const [copied, setCopied] = useState(false)
   const r = useMemo(() => scorecard(vendors, criteria), [vendors, criteria])
 

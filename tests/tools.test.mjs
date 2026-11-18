@@ -14,6 +14,7 @@ import { screen, EMPTY_DPIA, toMarkdown as dpiaMarkdown } from '../src/lib/tools
 import { loopCost, loopOnEveryModel, DEFAULT_LOOP } from '../src/lib/tools/agent-loop.ts'
 import { agreement, strengthOf, DEFAULT_AGREEMENT } from '../src/lib/tools/judge-agreement.ts'
 import { thresholds, breakEven, BANDS, DEFAULT_ESCALATION } from '../src/lib/tools/escalation-threshold.ts'
+import { compareRag, DEFAULT_RAG, CONTEXT_WINDOW } from '../src/lib/tools/rag-vs-long-context.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -383,4 +384,73 @@ test('escalation: zero volume, 0% and 100% accuracy, junk input', () => {
 test('escalation: flags bands whose accuracy rises as confidence falls', () => {
   const bands = DEFAULT_ESCALATION.bands.map((b, i) => (i === 2 ? { ...b, accuracyPct: 97 } : b))
   assert.equal(thresholds({ ...DEFAULT_ESCALATION, bands }).uncalibrated, true)
+})
+
+// --- RAG vs long context
+test('rag vs long context: cache writes and reads priced on the default scenario', () => {
+  const r = compareRag(DEFAULT_RAG) // Sonnet 5.5: input 2, output 10, cache write 2.5, cache read 0.1
+  const lc = r.longContext
+  assert.equal(lc.fits, true)
+  assert.equal(lc.writes, 40 * 30)
+  assert.equal(lc.reads, 20000 - 1200)
+  close(lc.writeCost, 1200 * 300000 * 2.5 / 1e6, 1e-6) // 900
+  close(lc.readCost, 18800 * 300000 * 0.1 / 1e6, 1e-6) // 564
+  close(lc.monthly, 900 + 564 + 20000 * (1500 * 2 + 400 * 10) / 1e6, 1e-6) // 1604
+  close(lc.perQuery, 1604 / 20000, 1e-9)
+  const perQuery = (1500 + 8 * 800) * 2 / 1e6 + 400 * 10 / 1e6 + 1500 * 0.1 / 1e6
+  close(r.rag.perQuery, perQuery, 1e-12)
+  const fixed = 70 + 4 * 300000 * 0.1 / 1e6 + (300000 * 0.1 / 1e6 + 4000) / 12
+  close(r.rag.monthly, fixed + 20000 * perQuery, 1e-6)
+  assert.equal(r.verdict, 'rag')
+  close(r.difference, lc.monthly - r.rag.monthly, 1e-6)
+  // writes can't exceed queries: at 500 queries a month every one writes the cache
+  const sparse = compareRag({ ...DEFAULT_RAG, queriesPerMonth: 500 }).longContext
+  assert.equal(sparse.writes, 500)
+  assert.equal(sparse.reads, 0)
+})
+
+test('rag vs long context: Haiku switches to its long-context rate over 100K tokens', () => {
+  const small = compareRag({ ...DEFAULT_RAG, model: 'claude-haiku-5-5', corpusTokens: 90000 })
+  assert.equal(small.longContext.price.id, 'claude-haiku-5-5')
+  const big = compareRag({ ...DEFAULT_RAG, model: 'claude-haiku-5-5', corpusTokens: 150000, queriesPerMonth: 1000, cacheWritesPerDay: 0 })
+  assert.equal(big.longContext.price.id, 'claude-haiku-5-5-long')
+  close(big.longContext.monthly, 1000 * 150000 * 0.05 / 1e6 + 1000 * (1500 * 0.5 + 400 * 2.5) / 1e6, 1e-9) // 9.25
+  assert.equal(big.rag.price.id, 'claude-haiku-5-5') // the short RAG prompt stays on the normal rate
+  // the switch is on corpus + query: 98,500 + 1,500 = 100,000 is not over
+  assert.equal(compareRag({ ...DEFAULT_RAG, model: 'claude-haiku-5-5', corpusTokens: 98500 }).longContext.price.id, 'claude-haiku-5-5')
+  assert.equal(compareRag({ ...DEFAULT_RAG, model: 'claude-haiku-5-5', corpusTokens: 98501 }).longContext.price.id, 'claude-haiku-5-5-long')
+})
+
+test('rag vs long context: a corpus over the context window rules long context out', () => {
+  const edge = CONTEXT_WINDOW - DEFAULT_RAG.queryTokens - DEFAULT_RAG.outputTokens
+  assert.equal(compareRag({ ...DEFAULT_RAG, corpusTokens: edge }).longContext.fits, true)
+  const over = compareRag({ ...DEFAULT_RAG, corpusTokens: edge + 1, queriesPerMonth: 10 })
+  assert.equal(over.longContext.fits, false)
+  assert.equal(over.verdict, 'rag') // even at a volume where it would otherwise be cheaper
+  assert.deepEqual(over.breakEvens, [])
+  assert.equal(over.breakEven, null)
+})
+
+test('rag vs long context: break-even volumes cost the same both ways', () => {
+  // default: crosses while every query still writes the cache
+  const r = compareRag(DEFAULT_RAG)
+  assert.equal(r.breakEvens.length, 1)
+  const a1 = 300000 * 2.5 / 1e6 + (1500 * 2 + 400 * 10) / 1e6
+  close(r.breakEven, r.rag.fixedMonthly / (a1 - r.rag.perQuery), 1e-6)
+  const at = compareRag({ ...DEFAULT_RAG, queriesPerMonth: r.breakEven })
+  close(at.longContext.monthly, at.rag.monthly, 1e-6)
+  assert.equal(compareRag({ ...DEFAULT_RAG, queriesPerMonth: 100 }).verdict, 'long-context')
+  // always-warm cache: one line against another, crossing on the read piece
+  const warm = compareRag({ ...DEFAULT_RAG, cacheWritesPerDay: 0 })
+  assert.equal(warm.breakEvens.length, 1)
+  const atWarm = compareRag({ ...DEFAULT_RAG, cacheWritesPerDay: 0, queriesPerMonth: warm.breakEven })
+  close(atWarm.longContext.monthly, atWarm.rag.monthly, 1e-6)
+  // a small corpus is cheaper per query than RAG and has no fixed cost: no break-even
+  const tiny = compareRag({ ...DEFAULT_RAG, corpusTokens: 10000, cacheWritesPerDay: 0 })
+  assert.deepEqual(tiny.breakEvens, [])
+  assert.equal(tiny.verdict, 'long-context')
+  // junk input doesn't throw or go negative
+  const junk = compareRag({ ...DEFAULT_RAG, queriesPerMonth: NaN, corpusTokens: -5, amortiseMonths: 0 })
+  assert.equal(junk.longContext.monthly, 0)
+  assert.ok(junk.rag.monthly >= 0)
 })

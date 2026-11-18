@@ -167,6 +167,19 @@ export const tools: Tool[] = [
       { q: "What should an error cost include?", a: "What one undetected mistake costs once it reaches a customer or a ledger: the rework, refunds or credits, penalties, the support time, and a fair share of lost customers. If errors differ a lot in size, run the calculator once with the typical cost and once with the worst plausible one." },
     ],
   },
+  {
+    slug: "rag-vs-long-context-calculator",
+    name: "RAG vs long context cost calculator",
+    short: "Whole corpus in a cached prompt, or retrieve chunks per query?",
+    description: "Compare the monthly cost of putting a whole corpus in a cached Claude prompt with RAG retrieval: cost per query, break-even volume and the arithmetic.",
+    intro: "For questions over a fixed reference corpus, such as a policy manual, a tariff nomenclature or a contract library, there are two ways to give the model what it needs. Put the whole corpus in every prompt and let prompt caching absorb the repeat, or retrieve the few chunks that look relevant and pay for embeddings and a vector store. Put in your workload and see which costs less, where the two cross, and the arithmetic behind both.",
+    faqs: [
+      { q: "How is prompt caching modelled?", a: "The corpus is the cached prefix. A cache entry lives five minutes and every hit refreshes it, so while queries keep arriving the corpus is read at the cache-read rate. Each time traffic resumes after a pause of more than five minutes, the corpus is written again at the cache-write rate. Enter how many such pauses a day your traffic has; writes are capped at one per query." },
+      { q: "What happens on Haiku with a large corpus?", a: "Haiku 5.5 bills prompts over 100K tokens at a higher long-context rate, for input, cache writes, cache reads and output. The calculator switches to that rate automatically when the corpus plus the query passes 100K tokens, and says so." },
+      { q: "What if the corpus is bigger than the context window?", a: "Then long context isn't an option: the corpus, the query and the answer must fit in one prompt. The calculator assumes a 1M-token window and tells you when the corpus doesn't fit. Splitting the corpus by topic and routing each question to one part is a middle path." },
+      { q: "Is cost the only thing to weigh?", a: "No. Long context sees everything, so it can't miss a passage the retriever failed to find, and it handles questions that span sections. RAG keeps prompts short and fast, scales past any window, and cites the chunks it used. Measure answer quality on a golden set before choosing on price." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

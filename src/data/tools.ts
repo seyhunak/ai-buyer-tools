@@ -180,6 +180,19 @@ export const tools: Tool[] = [
       { q: "Is cost the only thing to weigh?", a: "No. Long context sees everything, so it can't miss a passage the retriever failed to find, and it handles questions that span sections. RAG keeps prompts short and fast, scales past any window, and cites the chunks it used. Measure answer quality on a golden set before choosing on price." },
     ],
   },
+  {
+    slug: "agent-reliability-calculator",
+    name: "Agent reliability calculator",
+    short: "End-to-end accuracy of a multi-step agent, and which step to fix",
+    description: "See how errors compound across a multi-step AI agent: end-to-end accuracy, cases sent to a person, silent errors per month, and the step to fix first.",
+    intro: "A pipeline of five steps that are each 95% right is only 77% right end to end. Checks and retries win most of that back, but only where they catch errors, and an error nobody catches is worse than one that goes to a person. List your pipeline's steps with how often each is right, how many of its errors the check after it catches, and how many retries it gets. You get the share of cases that come out right untouched, go to a person, or come out wrong without anyone noticing, and which step causes most of the damage.",
+    faqs: [
+      { q: "What counts as a check?", a: "Anything after a step that can tell its output is wrong: a JSON schema, a sum that must add up, a lookup against the system of record, a rule, or a second model acting as a judge. Measure its catch rate the same way as accuracy: run it on outputs you know are wrong and count how many it flags. A judge's catch rate is the recall from the LLM judge agreement calculator." },
+      { q: "Why does a missed error count as a wrong output?", a: "Because later steps build on it. A wrong field extracted at step two flows into the decision and the letter, and each looks fine on its own. The calculator assumes a missed error reaches the output unless a later step happens to send the case to a person, and that a person fixes what they are sent." },
+      { q: "Why is a retry not a fresh attempt?", a: "A retry sees the same input, often with the same prompt, so it tends to fail the same way. Set how independent a retry is below 100% to reflect that: at 70%, a retry succeeds 70% as often as a first attempt. Feeding the check's error message back into the retry raises it; retrying an unreadable scan does not." },
+      { q: "Where should I add a check first?", a: "At the step marked weakest: it starts the largest share of wrong outputs. That is usually a judgement step with no deterministic check after it. The result shows what a check catching 95% of its errors would change, and how many more cases it would send to a person, so you can size the review queue with the human review staffing calculator." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

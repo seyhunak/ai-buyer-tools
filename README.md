@@ -1,6 +1,6 @@
 # AI buyer tools
 
-13 free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
+14 free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
 
 | tool | what it answers |
 |---|---|
@@ -17,6 +17,7 @@
 | [LLM judge agreement calculator](https://seyhunakyurek.com/tools/llm-judge-agreement-calculator) | Does your LLM judge agree with people beyond chance? Cohen's kappa |
 | [Escalation threshold calculator](https://seyhunakyurek.com/tools/escalation-threshold-calculator) | At what confidence should an AI workflow hand a case to a person? |
 | [RAG vs long context cost calculator](https://seyhunakyurek.com/tools/rag-vs-long-context-calculator) | Whole corpus in a cached prompt, or retrieve chunks per query? |
+| [Agent reliability calculator](https://seyhunakyurek.com/tools/agent-reliability-calculator) | End-to-end accuracy of a multi-step agent, and which step to fix |
 
 Everything runs in the browser. Nothing you type is sent anywhere.
 

@@ -14,6 +14,7 @@ import AgentLoopCost from "@/components/tools/AgentLoopCost"
 import JudgeAgreement from "@/components/tools/JudgeAgreement"
 import EscalationThreshold from "@/components/tools/EscalationThreshold"
 import RagVsLongContext from "@/components/tools/RagVsLongContext"
+import AgentReliability from "@/components/tools/AgentReliability"
 import ShareResult from "@/components/tools/ShareResult"
 import "./theme.css"
 import "@/components/tools/tools.css"
@@ -32,6 +33,7 @@ const UI: Record<string, ComponentType> = {
   "llm-judge-agreement-calculator": JudgeAgreement,
   "escalation-threshold-calculator": EscalationThreshold,
   "rag-vs-long-context-calculator": RagVsLongContext,
+  "agent-reliability-calculator": AgentReliability,
 }
 
 // Hash routes (#/ai-token-cost-estimator) so the build works on any static host.

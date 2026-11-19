@@ -2,7 +2,7 @@
   "name": "ai-buyer-tools",
   "version": "1.0.0",
   "private": true,
-  "description": "Free, single-purpose AI decision tools: token cost & ROI, agent loop cost, model routing, review staffing, vendor scorecard, LLM judge agreement, EU AI Act and GDPR DPIA screening, agent fit, build vs buy, accuracy proof.",
+  "description": "Free, single-purpose AI decision tools: token cost & ROI, agent loop cost, agent reliability, escalation thresholds, RAG vs long context, model routing, review staffing, vendor scorecard, LLM judge agreement, EU AI Act and GDPR DPIA screening, agent fit, build vs buy, accuracy proof.",
   "license": "MIT",
   "type": "module",
   "scripts": {

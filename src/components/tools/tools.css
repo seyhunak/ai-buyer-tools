@@ -72,3 +72,9 @@
 .tl-crit { display: block; }
 .tl-box { width: 18px; height: 18px; accent-color: hsl(var(--primary)); }
 .tl-box:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+/* agent reliability: one step per block, and a three-way split bar */
+.tl-step { display: grid; gap: var(--space-sm); padding-block: var(--space-sm); border-top: 1px solid hsl(var(--border)); }
+.tl-step-head { display: flex; gap: var(--space-sm); align-items: end; }
+.tl-step-head .tl-field { flex: 1; }
+.tl-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: hsl(var(--muted)); margin-bottom: var(--space-xs); }
+.tl-bar > span { display: block; height: 100%; }

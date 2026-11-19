@@ -15,6 +15,7 @@ import { loopCost, loopOnEveryModel, DEFAULT_LOOP } from '../src/lib/tools/agent
 import { agreement, strengthOf, DEFAULT_AGREEMENT } from '../src/lib/tools/judge-agreement.ts'
 import { thresholds, breakEven, BANDS, DEFAULT_ESCALATION } from '../src/lib/tools/escalation-threshold.ts'
 import { compareRag, DEFAULT_RAG, CONTEXT_WINDOW } from '../src/lib/tools/rag-vs-long-context.ts'
+import { reliability, stepOutcome, withBetterCheck, perStepNeeded, DEFAULT_RELIABILITY } from '../src/lib/tools/agent-reliability.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -453,4 +454,68 @@ test('rag vs long context: break-even volumes cost the same both ways', () => {
   const junk = compareRag({ ...DEFAULT_RAG, queriesPerMonth: NaN, corpusTokens: -5, amortiseMonths: 0 })
   assert.equal(junk.longContext.monthly, 0)
   assert.ok(junk.rag.monthly >= 0)
+})
+
+// --- agent reliability
+test('agent reliability: one step matches the closed form', () => {
+  // p = 0.9, d = 0.8, r = 2, independent retries: qd = 0.08
+  const o = stepOutcome({ name: 'x', accuracyPct: 90, catchPct: 80, retries: 2 }, 1)
+  const g = 1 + 0.08 + 0.0064
+  close(o.success, 0.9 * g)
+  close(o.silent, 0.1 * 0.2 * g)
+  close(o.escalate, 0.08 ** 3)
+  close(o.attempts, g)
+  close(o.success + o.silent + o.escalate, 1)
+  // no check: errors pass silently and nothing is retried
+  const blind = stepOutcome({ name: 'x', accuracyPct: 90, catchPct: 0, retries: 3 })
+  assert.deepEqual([blind.success, blind.escalate, blind.attempts], [0.9, 0, 1])
+  close(blind.silent, 0.1)
+  // a perfect check with no retries escalates every error
+  const gate = stepOutcome({ name: 'x', accuracyPct: 90, catchPct: 100, retries: 0 })
+  close(gate.escalate, 0.1); close(gate.silent, 0)
+  // correlated retries are worth less: fix = 0.5 halves a retry's chance of success
+  const half = stepOutcome({ name: 'x', accuracyPct: 90, catchPct: 100, retries: 1 }, 0.5)
+  close(half.success, 0.9 + 0.1 * 0.45)
+  close(half.escalate, 0.1 * 0.55)
+})
+
+test('agent reliability: chain without checks is the product of accuracies', () => {
+  const steps = Array.from({ length: 8 }, (_, k) => ({ name: `s${k}`, accuracyPct: 95, catchPct: 0, retries: 0 }))
+  const r = reliability({ ...DEFAULT_RELIABILITY, steps })
+  close(r.straightThrough, 0.95 ** 8)
+  close(r.noChecks, 0.95 ** 8)
+  close(r.wrong, 1 - 0.95 ** 8)
+  assert.equal(r.escalated, 0)
+  close(r.callsPerCase, 8)
+  close(perStepNeeded(90, 8), 0.9 ** (1 / 8) * 100)
+})
+
+test('agent reliability: outcomes add up, shares add up, money is priced', () => {
+  const r = reliability(DEFAULT_RELIABILITY)
+  close(r.straightThrough + r.escalated + r.wrong, 1, 1e-12)
+  close(r.steps.reduce((s, x) => s + x.wrongShare, 0), 1, 1e-12)
+  close(r.steps.reduce((s, x) => s + x.escalationShare, 0), 1, 1e-12)
+  assert.ok(r.straightThrough > r.noChecks, 'checks and retries beat the bare chain')
+  close(r.steps[0].reach, 1)
+  assert.ok(r.steps[4].reach < 1)
+  close(r.wrongPerMonth, r.wrong * 5000, 1e-9)
+  close(r.reviewHours, r.escalatedPerMonth * 8 / 60, 1e-9)
+  close(r.totalCostPerMonth, r.wrongPerMonth * 120 + r.reviewHours * 45, 1e-6)
+  // "Decide" (92%, 60% caught) is the weakest step
+  assert.equal(r.weakest, 3)
+  // fixing its check lowers wrong outputs and raises escalations
+  const better = withBetterCheck(DEFAULT_RELIABILITY, 3, 95)
+  assert.ok(better.wrong < r.wrong)
+  assert.ok(better.escalated > r.escalated)
+  // the helper never lowers a check
+  close(withBetterCheck(DEFAULT_RELIABILITY, 2, 10).wrong, r.wrong, 1e-12)
+})
+
+test('agent reliability: junk and empty input', () => {
+  const empty = reliability({ ...DEFAULT_RELIABILITY, steps: [] })
+  assert.deepEqual([empty.straightThrough, empty.wrong, empty.escalated, empty.weakest], [1, 0, 0, -1])
+  const junk = reliability({ ...DEFAULT_RELIABILITY, casesPerMonth: NaN, errorCost: -1, steps: [{ name: '', accuracyPct: 140, catchPct: -20, retries: 99 }] })
+  close(junk.straightThrough, 1)
+  assert.equal(junk.totalCostPerMonth, 0)
+  assert.equal(junk.weakest, -1)
 })

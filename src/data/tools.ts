@@ -193,6 +193,20 @@ export const tools: Tool[] = [
       { q: "Where should I add a check first?", a: "At the step marked weakest: it starts the largest share of wrong outputs. That is usually a judgement step with no deterministic check after it. The result shows what a check catching 95% of its errors would change, and how many more cases it would send to a person, so you can size the review queue with the human review staffing calculator." },
     ],
   },
+  {
+    slug: "llm-eval-ab-test-calculator",
+    name: "LLM eval A/B test calculator",
+    short: "Is prompt or model B really better than A on the same golden set?",
+    description: "Check whether a new prompt or model really beats the old one on the same test cases: paired McNemar test, the difference with a range, and cases needed.",
+    intro: "A new prompt scores 93.8% on the golden set and the old one 90.3%. Is that a real gain or the luck of these 400 cases? Because both ran on the same cases, only the cases where they disagree tell you anything. Count the four boxes and the calculator gives the difference with its range, an exact test, whether a model swap made no difference that matters, and how many cases a fair comparison needs.",
+    faqs: [
+      { q: "Why a paired test?", a: "Because A and B answered the same cases. A case both get right, or both get wrong, says nothing about which is better; only the cases where they disagree do, and McNemar's test uses only those. Treating the two scores as if they came from separate test sets throws the pairing away and needs about twice as many cases or more to see the same difference." },
+      { q: "What does no difference that matters mean?", a: "The whole range for B − A sits inside plus or minus the smallest difference you care about. That is the answer you want before switching to a cheaper model or a new model version: not that no difference was found, which a small test always says, but that any difference is smaller than your bar." },
+      { q: "Why read the cases B broke?", a: "An average can rise while B fails cases A handled. If the broken cases are the expensive ones, such as a missed fraud flag or a wrong dosage, a better score is still a regression. Read every one and add them to the golden set so the next change is tested on them too." },
+      { q: "What about run-to-run noise?", a: "Model outputs can change between runs of the same prompt. Run A twice and count how often it disagrees with itself. If A against A flips about as many cases as A against B, the difference is noise. Fix the settings you can, such as temperature, and grade with the same judge or rubric for both." },
+      { q: "How many cases do I need?", a: "It depends on how often A and B disagree, not on accuracy. The calculator uses Connor's formula with the disagreement rate you measured: a change that flips 8% of answers needs about 1,600 cases to find a 2-point gain at 95% confidence and 80% power. A change that flips 2% needs about 400." },
+    ],
+  },
 ]
 
 export const getTool = (slug: string) => tools.find((t) => t.slug === slug) ?? null

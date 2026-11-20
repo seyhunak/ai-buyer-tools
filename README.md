@@ -1,6 +1,6 @@
 # AI buyer tools
 
-14 free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
+Fifteen free, single-purpose tools for practical AI decisions. Hosted at **https://seyhunakyurek.com/tools**. Run or host your own copy from this repo.
 
 | tool | what it answers |
 |---|---|
@@ -18,6 +18,7 @@
 | [Escalation threshold calculator](https://seyhunakyurek.com/tools/escalation-threshold-calculator) | At what confidence should an AI workflow hand a case to a person? |
 | [RAG vs long context cost calculator](https://seyhunakyurek.com/tools/rag-vs-long-context-calculator) | Whole corpus in a cached prompt, or retrieve chunks per query? |
 | [Agent reliability calculator](https://seyhunakyurek.com/tools/agent-reliability-calculator) | End-to-end accuracy of a multi-step agent, and which step to fix |
+| [LLM eval A/B test calculator](https://seyhunakyurek.com/tools/llm-eval-ab-test-calculator) | Is prompt or model B really better than A on the same golden set? |
 
 Everything runs in the browser. Nothing you type is sent anywhere.
 
@@ -47,6 +48,10 @@ Links use hash routes (`#/ai-token-cost-estimator`), so `dist/` works from any f
   - `dpia.ts`: GDPR Art. 35 DPIA screening against the WP248 criteria, with the obligations that follow.
   - `agent-loop.ts`: turn-by-turn cost of a tool-calling agent loop as its context grows, with incremental prompt caching and the context-window limit.
   - `judge-agreement.ts`: Cohen's kappa between an LLM judge and human labels, with an interval, PABAK, catch and false-alarm rates.
+  - `escalation-threshold.ts`: the cheapest confidence threshold for sending cases to a person, from band accuracy, error cost and review cost.
+  - `rag-vs-long-context.ts`: a cached whole-corpus prompt against retrieval per query, with the break-even volume.
+  - `agent-reliability.ts`: end-to-end accuracy of a multi-step agent from each step's accuracy, check catch rate and retries.
+  - `eval-ab-test.ts`: paired comparison of two prompts or models on one golden set: exact McNemar test, Bonett–Price interval, Connor sample size.
 - `src/components/tools/`: the React UI, one component per tool, styled by `tools.css` and `src/theme.css`.
 - `tests/tools.test.mjs`: unit tests, including textbook values for the statistics.
 

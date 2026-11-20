@@ -21,7 +21,7 @@ function Split({ r }: { r: ReliabilityResult }) {
       <div className="tl-bar" role="img" aria-label={parts.map((p) => `${p.label} ${pct(p.value)}`).join(", ")}>
         {parts.map((p) => <span key={p.key} style={{ width: `${p.value * 100}%`, background: p.color }} />)}
       </div>
-      <div className="tl-legend">
+      <div className="tl-legend tl-legend--stack">
         {parts.map((p) => <span key={p.key}><span className="tl-swatch" style={{ background: p.color }} />{p.label}: {pct(p.value)}</span>)}
       </div>
     </div>

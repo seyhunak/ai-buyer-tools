@@ -16,6 +16,7 @@ import { agreement, strengthOf, DEFAULT_AGREEMENT } from '../src/lib/tools/judge
 import { thresholds, breakEven, BANDS, DEFAULT_ESCALATION } from '../src/lib/tools/escalation-threshold.ts'
 import { compareRag, DEFAULT_RAG, CONTEXT_WINDOW } from '../src/lib/tools/rag-vs-long-context.ts'
 import { reliability, stepOutcome, withBetterCheck, perStepNeeded, DEFAULT_RELIABILITY } from '../src/lib/tools/agent-reliability.ts'
+import { abTest, mcnemarExact, pairedInterval, pairedSampleSize, unpairedSampleSize, DEFAULT_AB } from '../src/lib/tools/eval-ab-test.ts'
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) <= eps, `${a} != ${b}`)
 const base = { ...DEFAULT_INPUT, cachedPct: 0, batchPct: 0, cacheWritesPerMonth: 0, monthlyOverhead: 0 }
@@ -518,4 +519,50 @@ test('agent reliability: junk and empty input', () => {
   close(junk.straightThrough, 1)
   assert.equal(junk.totalCostPerMonth, 0)
   assert.equal(junk.weakest, -1)
+})
+
+// --- LLM eval A/B test
+test('eval a/b: exact McNemar matches the binomial', () => {
+  close(mcnemarExact(0, 10), 2 / 1024) // 2 · 0.5^10
+  close(mcnemarExact(1, 9), 2 * 11 / 1024)
+  assert.equal(mcnemarExact(5, 5), 1)
+  assert.equal(mcnemarExact(0, 0), 1)
+  // symmetric, and large counts don't underflow
+  close(mcnemarExact(23, 9), mcnemarExact(9, 23))
+  const big = mcnemarExact(2000, 2200)
+  assert.ok(big > 0.001 && big < 0.01, `${big}`)
+})
+
+test('eval a/b: interval and verdicts', () => {
+  const r = abTest(DEFAULT_AB)
+  assert.equal(r.n, 400)
+  close(r.accA, 361 / 400); close(r.accB, 375 / 400); close(r.diff, 14 / 400)
+  assert.equal(r.discordant, 32)
+  assert.ok(r.diffLow > 0 && r.diffLow < r.diff && r.diff < r.diffHigh)
+  assert.equal(r.verdict, 'b-better')
+  // swap A and B: mirrored result
+  const m = abTest({ ...DEFAULT_AB, aOnly: 23, bOnly: 9 })
+  assert.equal(m.verdict, 'a-better'); close(m.diffLow, -r.diffHigh); close(m.diffHigh, -r.diffLow)
+  // big set, few flips, no real difference: within a 2-point margin
+  assert.equal(abTest({ ...DEFAULT_AB, bothRight: 3600, aOnly: 20, bOnly: 21, bothWrong: 200 }).verdict, 'equivalent')
+  // small set, same flips: can't tell
+  assert.equal(abTest({ ...DEFAULT_AB, aOnly: 20, bOnly: 21 }).verdict, 'unclear')
+  assert.equal(abTest({ ...DEFAULT_AB, bothRight: 0, aOnly: 0, bOnly: 0, bothWrong: 0 }).verdict, 'no-data')
+  // junk input is treated as zero, not NaN
+  const junk = abTest({ ...DEFAULT_AB, aOnly: -4, bOnly: NaN })
+  assert.equal(junk.discordant, 0); assert.ok(Number.isFinite(junk.diffLow))
+  const w = pairedInterval(0, 0, 100)
+  assert.ok(w.low < 0 && w.high > 0)
+})
+
+test('eval a/b: sample sizes', () => {
+  // Connor: psi 0.08, delta 0.02, 95% / 80%
+  assert.equal(pairedSampleSize(0.08, 0.02), Math.ceil((1.96 * Math.sqrt(0.08) + 0.8416 * Math.sqrt(0.08 - 0.0004)) ** 2 / 0.0004))
+  // fewer flips need fewer cases; psi can't be below delta
+  assert.ok(pairedSampleSize(0.02, 0.02) < pairedSampleSize(0.08, 0.02))
+  assert.equal(pairedSampleSize(0.001, 0.02), pairedSampleSize(0.02, 0.02))
+  assert.equal(pairedSampleSize(0.1, 0), null)
+  // pairing beats two separate test sets
+  assert.ok(unpairedSampleSize(0.9, 0.02) > pairedSampleSize(0.08, 0.02))
+  assert.ok(pairedSampleSize(0.08, 0.02, 95, 90) > pairedSampleSize(0.08, 0.02, 95, 80))
 })
